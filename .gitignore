@@ -1,4 +1,4 @@
-# Environment files
+git add .gitignore# Environment files
 .env
 .env.local
 *.env
