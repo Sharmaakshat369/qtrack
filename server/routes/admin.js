@@ -193,4 +193,19 @@ router.put('/emergency-stop', auth, async (req, res) => {
   }
 });
 
+// Get emergency status
+router.get('/emergency-status', async (req, res) => {
+  try {
+    const admin = await Admin.findOne().sort({ createdAt: -1 });
+    if (!admin) {
+      return res.status(404).json({ msg: 'No admin found' });
+    }
+
+    res.json(admin.queueSettings);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 module.exports = router;
