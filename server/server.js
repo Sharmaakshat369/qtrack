@@ -1,4 +1,5 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: __dirname + '/.env' });  // __dirname points to /server
+console.log("ENV:", process.env.MONGO_URI);
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -21,7 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/queue', require('./routes/queue'));
-
+app.use('/api/admin', require('./routes/admin')); //added on24may while resolving issue
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'active', 
@@ -29,6 +30,8 @@ app.get('/api/health', (req, res) => {
     mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
+
+console.log(require('dotenv').config());
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
