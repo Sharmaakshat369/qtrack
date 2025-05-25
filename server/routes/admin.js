@@ -102,26 +102,18 @@ router.post('/login', [
   }
 });
 
-// Generate queue code/QR
+// In your generate-code route
 router.post('/generate-code', auth, async (req, res) => {
   try {
     const admin = await Admin.findById(req.admin.id);
-    if (!admin) {
-      return res.status(404).json({ msg: 'Admin not found' });
-    }
+    if (!admin) return res.status(404).json({ msg: 'Admin not found' });
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const qrData = JSON.stringify({ 
-      adminId: admin.id,
-      code,
-      organization: admin.organization
-    });
-
-    const qrCode = await QRCode.toDataURL(qrData);
-
+    
+    // Only send the code to frontend (not the full data URL)
     res.json({
       code,
-      qrCode
+      qrData: code // Just the code, not the full QR image
     });
   } catch (err) {
     console.error(err.message);
@@ -172,10 +164,12 @@ router.put('/emergency-stop', auth, async (req, res) => {
       return res.status(404).json({ msg: 'Admin not found' });
     }
 
-    const { emergencyStop, emergencyMessage } = req.body;
+    const { emergencyStop, emergencyMessage = '' } = req.body;
     
-    admin.queueSettings.emergencyStop = emergencyStop;
-    admin.queueSettings.emergencyMessage = emergencyMessage || '';
+    admin.queueSettings = {
+      emergencyStop,
+      emergencyMessage
+    };
     await admin.save();
 
     // Add 20 minutes to all waiting users' estimated time
@@ -186,10 +180,17 @@ router.put('/emergency-stop', auth, async (req, res) => {
       );
     }
 
-    res.json(admin.queueSettings);
+    res.json({
+      success: true,
+      emergencyStop,
+      emergencyMessage
+    });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    console.error('Emergency Stop Error:', err);
+    res.status(500).json({
+      success: false,
+      msg: 'Server error during emergency operation'
+    });
   }
 });
 

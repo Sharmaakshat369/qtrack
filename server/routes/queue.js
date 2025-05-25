@@ -10,7 +10,27 @@ const client = new twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN)
 router.post('/add', async (req, res) => {
   const { name, phone } = req.body;
 
+  // Basic validation
+  if (!name || !phone) {
+    return res.status(400).json({ msg: 'Name and phone are required' });
+  }
+
   try {
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ phone, status: 'waiting' });
+    if (existingUser) {
+      return res.json({
+        tokenNumber: existingUser.tokenNumber,
+        queuePosition: existingUser.queuePosition,
+        estimatedTime: existingUser.estimatedTime,
+        qrCode: existingUser.qrCode,
+        existing: true
+      });
+    }
+
+
+
     // Get the last token number and increment
     const lastUser = await User.findOne().sort({ tokenNumber: -1 });
     const tokenNumber = lastUser ? lastUser.tokenNumber + 1 : 1;
@@ -25,7 +45,8 @@ router.post('/add', async (req, res) => {
       phone,
       tokenNumber,
       queuePosition,
-      estimatedTime
+      estimatedTime,
+      status: 'waiting'
     });
 
     await user.save();
@@ -44,12 +65,15 @@ router.post('/add', async (req, res) => {
     res.json({
       tokenNumber,
       queuePosition,
-      estimatedTime,
-      qrCode
+      estimatedTime: `${estimatedTime} min`,
+      qrCode: user.qrCode
     });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    console.error('Error:', err.message);
+    res.status(500).json({ 
+      msg: 'Server error',
+      error: err.message 
+    });
   }
 });
 
